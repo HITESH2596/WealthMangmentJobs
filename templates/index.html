@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HNWI Wealth Management Job Board</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-gray-100 font-sans min-h-screen">
+
+    <!-- Header navigation -->
+    <header class="border-b border-gray-800 bg-gray-950/50 backdrop-blur sticky top-0 z-50">
+        <div class="max-w-6xl mx-auto px-4 py-4 flex justify-between items-center">
+            <div>
+                <h1 class="text-xl font-bold text-amber-500 tracking-wide">🏆 UAE WEALTH CONNECT</h1>
+                <p class="text-xs text-gray-400">Pure Institutional HNWI & Private Banking Aggregator</p>
+            </div>
+            <button onclick="fetchJobs()" id="refreshBtn" class="bg-amber-600 hover:bg-amber-500 text-white text-sm font-semibold px-5 py-2 rounded-lg transition dynamic-shadow">
+                Fetch Live Jobs
+            </button>
+        </div>
+    </header>
+
+    <!-- Visual Dashboard Layout Area -->
+    <main class="max-w-6xl mx-auto px-4 py-8">
+        
+        <!-- Interactive Search Filters -->
+        <div class="mb-8 flex flex-col md:flex-row gap-4 justify-between items-center bg-gray-950 p-4 rounded-xl border border-gray-800">
+            <input type="text" id="searchInput" onkeyup="filterJobs()" placeholder="Quick filter by company, title, asset keywords..." class="w-full md:w-96 bg-gray-900 border border-gray-700 rounded-lg px-4 py-2 text-sm text-gray-200 focus:outline-none focus:border-amber-500">
+            <div class="flex gap-2 text-xs text-gray-400">
+                <span class="px-3 py-1 bg-gray-800 rounded-full border border-gray-700">🚫 Zero Real Estate Rules Active</span>
+                <span class="px-3 py-1 bg-gray-800 rounded-full border border-gray-700">🇦🇪 Dubai & Abu Dhabi Hubs</span>
+            </div>
+        </div>
+
+        <!-- Dynamic Loader Widget Status -->
+        <div id="loader" class="hidden text-center py-12">
+            <div class="animate-spin inline-block w-8 h-8 border-[3px] border-current border-t-transparent text-amber-500 rounded-full mb-4"></div>
+            <p class="text-gray-400 text-sm">Bypassing property brokers... Querying DIFC & ADGM institutional feeds...</p>
+        </div>
+
+        <!-- Empty Welcome Feed State -->
+        <div id="welcomeState" class="text-center py-16 bg-gray-950 rounded-2xl border border-gray-800 border-dashed">
+            <h3 class="text-lg font-medium text-gray-300 mb-2">Dashboard System Ready</h3>
+            <p class="text-gray-500 text-sm max-w-md mx-auto mb-6">Click the "Fetch Live Jobs" button above to dynamically run the backend scraper pipeline.</p>
+        </div>
+
+        <!-- Clean Scannable Cards Grid -->
+        <div id="jobGrid" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+    </main>
+
+    <!-- JavaScript Data Engine Client -->
+    <script>
+        let allJobs = [];
+
+        async function fetchJobs() {
+            const btn = document.getElementById('refreshBtn');
+            const loader = document.getElementById('loader');
+            const grid = document.getElementById('jobGrid');
+            const welcome = document.getElementById('welcomeState');
+            
+            btn.disabled = true;
+            btn.innerText = "Scanning Feeds...";
+            loader.classList.remove('hidden');
+            grid.innerHTML = "";
+            welcome.classList.add('hidden');
+
+            try {
+                const response = await fetch('/api/jobs');
+                allJobs = await response.json();
+                displayJobs(allJobs);
+            } catch (error) {
+                alert("Failed to safely retrieve web jobs stream from endpoint routing loop.");
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "Fetch Live Jobs";
+                loader.classList.add('hidden');
+                if(allJobs.length === 0) welcome.classList.remove('hidden');
+            }
+        }
+
+        function displayJobs(jobs) {
+            const grid = document.getElementById('jobGrid');
+            grid.innerHTML = "";
+            
+            jobs.forEach(job => {
+                const locColor = job.location === "Dubai" ? "bg-emerald-950 text-emerald-400 border-emerald-800" : "bg-blue-950 text-blue-400 border-blue-800";
+                const card = `
+                    <div class="job-card bg-gray-950 border border-gray-800 rounded-xl p-6 hover:border-gray-700 transition flex flex-col justify-between" data-text="${job.title} ${job.company} ${job.summary}">
+                        <div>
+                            <div class="flex justify-between items-start gap-2 mb-3">
+                                <span class="px-2.5 py-0.5 rounded text-xs font-semibold border ${locColor}">${job.location}</span>
+                                <span class="text-xs font-mono text-amber-500 bg-amber-950/40 px-2 py-0.5 rounded border border-amber-900/50">Verified Finance</span>
+                            </div>
+                            <h3 class="text-base font-bold text-white mb-1 hover:text-amber-400 transition"><a href="${job.link}" target="_blank">${job.title}</a></h3>
+                            <p class="text-sm font-medium text-gray-400 mb-4">${job.company}</p>
+                            <p class="text-xs text-gray-400 line-clamp-3 leading-relaxed bg-gray-900/50 p-3 rounded-lg border border-gray-800/80 mb-4">${job.summary}</p>
+                        </div>
+                        <a href="${job.link}" target="_blank" class="block text-center text-xs font-semibold bg-gray-900 hover:bg-gray-800 border border-gray-700 text-gray-200 py-2.5 rounded-lg transition">
+                            Apply via Platform Source ↗
+                        </a>
+                    </div>
+                `;
+                grid.innerHTML += card;
+            });
+        }
+
+        function filterJobs() {
+            const query = document.getElementById('searchInput').value.toLowerCase();
+            const cards = document.getElementsByClassName('job-card');
+            
+            Array.from(cards).forEach(card => {
+                const text = card.getAttribute('data-text').toLowerCase();
+                if(text.includes(query)) {
+                    card.classList.remove('hidden');
+                } else {
+                    card.classList.add('hidden');
+                }
+            });
+        }
+    </script>
+</body>
+</html>
